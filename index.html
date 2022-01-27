@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Make4x6</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/vuejs"></script>
+    <style>
+        body {
+            background-color: #1A1A1A;
+            font-family: Arial;
+        }
+        h1, p {
+            text-align: center;
+            color: #FFFFFF;
+        }
+        #app {
+            display: grid;
+            align-items: center;
+            grid-gap: 10px;
+        }
+        img {
+            border: 5px solid #FFFFFF;
+        }
+        #inputhitbox {
+            border: 3px solid #FFFFFF;
+            border-radius: 10px;
+            font-size: 2.5vmin;
+            font-style: italic;
+            text-align: center;
+            height: 5vh;
+            width: 10vw;
+            color: #FFFFFF;
+            background-color: #2C2C2C;
+            cursor: pointer;
+        }
+        input[type=file] {
+            display: none;
+        }
+        .items {
+            margin: 0 auto 0 auto;
+        }
+        .imgdisabled {
+            display: none;
+        }
+        .imgenabled {
+            display: unset;
+        }
+        @media only screen and (max-device-width: 480px) {
+            img {
+                width: 90vw;
+            }
+            #inputhitbox {
+                font-size: 5vmin;
+                width: 45vw;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Make4x6</h1>
+    <p>This creates 4 pieces of 2x2 and 8 pieces of 1x1</p>
+    <div id="app">
+        <img class="items" v-bind:src="$data.imgbase64" v-bind:class="{ imgdisabled: imgdisabled, imgenabled: !imgdisabled}">
+        <button class="items" id="inputhitbox" @click="$refs.fileinput.click()">
+            <input type="file" @change="handleFile($event)" ref="fileinput">
+            Select image
+        </button>
+    </div>
+    <script>
+        let socket = io();
+        let vue = new Vue({
+            el: "#app",
+            data: {
+                imgdisabled: true,
+                imgbase64: ""
+            },
+            methods: {
+                handleFile: function(event) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        socket.emit("make4x6", new Uint8Array(e.target.result));
+                    }
+                    if (event.target.files[0].type.match("image.*")) {
+                        reader.readAsArrayBuffer(event.target.files[0]);
+                    } else {
+                        alert("Images only!")
+                    }
+                },
+            }
+        });
+        socket.on("4x6img", imgbuf => {
+            vue.$data.imgbase64 = URL.createObjectURL(new Blob([imgbuf], {type: "image/jpeg"}));
+            vue.$data.imgdisabled = false;
+        });
+        socket.on("serverror", err => {
+            alert(err);
+        })
+    </script>
+</body>
+</html>
