@@ -1,4 +1,4 @@
-import Jimp from "Jimp";
+import Jimp from "jimp";
 import express from "express";
 import http from "http";
 import { Server, Socket } from "socket.io";
