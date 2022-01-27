@@ -2,10 +2,15 @@ import Jimp from "jimp";
 import express from "express";
 import http from "http";
 import { Server, Socket } from "socket.io";
+import JPEG from "jpeg-js"
 
 let app = express();
 let server = http.createServer(app);
 let io = new Server(server);
+Jimp.decoders['image/jpeg'] = (data) => JPEG.decode(data, {
+	maxMemoryUsageInMB: 1024,
+	maxResolutionInMP: 200
+})
 
 app.get("/", (req, res) => {
     res.sendFile(__dirname + "/index.html");
