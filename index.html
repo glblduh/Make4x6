@@ -36,6 +36,11 @@
             background-color: #2C2C2C;
             cursor: pointer;
         }
+        #inputhitbox:disabled {
+            cursor: auto;
+            border-color: #ff6060;
+            color: #ff6060;
+        }
         input[type=file] {
             display: none;
         }
@@ -64,7 +69,7 @@
     <p>This creates 4 pieces of 2x2 and 8 pieces of 1x1</p>
     <div id="app">
         <img class="items" v-bind:src="$data.imgbase64" v-bind:class="{ imgdisabled: imgdisabled, imgenabled: !imgdisabled}">
-        <button class="items" id="inputhitbox" @click="$refs.fileinput.click()">
+        <button class="items" id="inputhitbox" @click="$refs.fileinput.click()" v-bind:disabled="buttondisabled">
             <input type="file" @change="handleFile($event)" ref="fileinput">
             Select image
         </button>
@@ -75,13 +80,15 @@
             el: "#app",
             data: {
                 imgdisabled: true,
+                buttondisabled: false,
                 imgbase64: ""
             },
             methods: {
                 handleFile: function(event) {
                     const reader = new FileReader();
                     reader.onload = (e) => {
-                        socket.emit("make4x6", new Uint8Array(e.target.result));
+                        this.buttondisabled = true;
+                        socket.emit("make4x6", e.target.result);
                     }
                     if (event.target.files[0].type.match("image.*")) {
                         reader.readAsArrayBuffer(event.target.files[0]);
@@ -94,6 +101,7 @@
         socket.on("4x6img", imgbuf => {
             vue.$data.imgbase64 = URL.createObjectURL(new Blob([imgbuf], {type: "image/jpeg"}));
             vue.$data.imgdisabled = false;
+            vue.$data.buttondisabled = false;
         });
         socket.on("serverror", err => {
             alert(err);

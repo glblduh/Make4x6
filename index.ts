@@ -2,15 +2,10 @@ import Jimp from "jimp";
 import express from "express";
 import http from "http";
 import { Server, Socket } from "socket.io";
-import JPEG from "jpeg-js"
 
 let app = express();
 let server = http.createServer(app);
-let io = new Server(server);
-Jimp.decoders['image/jpeg'] = (data) => JPEG.decode(data, {
-	maxMemoryUsageInMB: 1024,
-	maxResolutionInMP: 200
-})
+let io = new Server(server, {maxHttpBufferSize: 1e+7});
 
 app.get("/", (req, res) => {
     res.sendFile(__dirname + "/index.html");
@@ -31,30 +26,32 @@ io.on("connection", socket => {
                 if (err) throw err;
                 // Make 4 2x2 of the bimg in the canvas 
                 canvas.blit(bimg.resize(192, 192), 0, 0)
-                .blit(bimg.resize(192, 192), 192, 0)
-                .blit(bimg.resize(192, 192), 0, 192)
-                .blit(bimg.resize(192, 192), 192, 192)
+                canvas.blit(bimg.resize(192, 192), 192, 0)
+                canvas.blit(bimg.resize(192, 192), 0, 192)
+                canvas.blit(bimg.resize(192, 192), 192, 192)
                 // Make the first 1x1 row under the 2x2
-                .blit(bimg.resize(96, 96), 0, 384)
-                .blit(bimg.resize(96, 96), 96, 384)
-                .blit(bimg.resize(96, 96), 192, 384)
-                .blit(bimg.resize(96, 96), 288, 384)
+                canvas.blit(bimg.resize(96, 96), 0, 384)
+                canvas.blit(bimg.resize(96, 96), 96, 384)
+                canvas.blit(bimg.resize(96, 96), 192, 384)
+                canvas.blit(bimg.resize(96, 96), 288, 384)
                 // Make the second 1x1 row under the first 1x1 row
-                .blit(bimg.resize(96, 96), 0, 480)
-                .blit(bimg.resize(96, 96), 96, 480)
-                .blit(bimg.resize(96, 96), 192, 480)
-                .blit(bimg.resize(96, 96), 288, 480)
+                canvas.blit(bimg.resize(96, 96), 0, 480)
+                canvas.blit(bimg.resize(96, 96), 96, 480)
+                canvas.blit(bimg.resize(96, 96), 192, 480)
+                canvas.blit(bimg.resize(96, 96), 288, 480)
                 // Write changes to file
                 canvas.getBuffer(Jimp.MIME_JPEG, (err, buf) => {
                     if (err) {
                         socket.emit("serverror", err);
                         throw err;
                     }
-                    socket.emit("4x6img", Uint8Array.from(buf));
+                    socket.emit("4x6img", Buffer.from(buf));
                 });
             });
         });
     });
 });
 
-server.listen(1010);
+server.listen(1010, () => {
+    console.log("Serving on http://0.0.0.0:1010");
+});
