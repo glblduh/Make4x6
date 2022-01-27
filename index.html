@@ -70,7 +70,7 @@
     <div id="app">
         <img class="items" v-bind:src="$data.imgbase64" v-bind:class="{ imgdisabled: imgdisabled, imgenabled: !imgdisabled}">
         <button class="items" id="inputhitbox" @click="$refs.fileinput.click()" v-bind:disabled="buttondisabled">
-            <input type="file" @change="handleFile($event)" ref="fileinput">
+            <input type="file" @change="handleFile($event)" ref="fileinput" data-max="1" accept="image/png,  image/jpeg">
             Select image
         </button>
     </div>
@@ -90,11 +90,9 @@
                         this.buttondisabled = true;
                         socket.emit("make4x6", e.target.result);
                     }
-                    if (event.target.files[0].type.match("image.*")) {
+                    if (event.target.files.length > 0) {
                         reader.readAsArrayBuffer(event.target.files[0]);
-                    } else {
-                        alert("Images only!")
-                    }
+                    } 
                 },
             }
         });
