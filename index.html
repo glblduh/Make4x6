@@ -53,6 +53,19 @@
         .imgenabled {
             display: unset;
         }
+        .minmax {
+            text-align: center;
+            color: #FFFFFF;
+            font-weight: bold;
+        }
+        input[type=number] {
+            width: 5vmin;
+            background-color: transparent;
+            border: 0;
+            text-align: center;
+            color: #FFFFFF;
+            border-bottom: 2px solid #FFFFFF;
+        }
         @media only screen and (max-device-width: 480px) {
             img {
                 width: 90vw;
@@ -66,9 +79,16 @@
 </head>
 <body>
     <h1>Make4x6</h1>
-    <p>This creates 4 pieces of 2x2 and 8 pieces of 1x1</p>
     <div id="app">
         <img class="items" v-bind:src="$data.imgbase64" v-bind:class="{ imgdisabled: imgdisabled, imgenabled: !imgdisabled}">
+        <div class="minmax">
+            2x2 pieces:
+            <input type="number" min="0" v-bind:max="twobytwomax" v-model="twobytwoamount">
+        </div>
+        <div class="minmax">
+            1x1 pieces:
+            <input type="number" min="0" v-bind:max="onebyonemax" v-model="onebyoneamount">
+        </div>
         <button class="items" id="inputhitbox" @click="$refs.fileinput.click()" v-bind:disabled="buttondisabled">
             <input type="file" @change="handleFile($event)" ref="fileinput" data-max="1" accept="image/png,  image/jpeg">
             Select image
@@ -81,19 +101,54 @@
             data: {
                 imgdisabled: true,
                 buttondisabled: false,
-                imgbase64: ""
+                imgbase64: "",
+                twobytwomax: 6,
+                onebyonemax: 24,
+                twobytwoamount: 4,
+                onebyoneamount: 8,
+                twobytwosize: 192,
+                onebyonesize: 96,
+                canvassize: [384, 576],
             },
             methods: {
                 handleFile: function(event) {
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         this.buttondisabled = true;
-                        socket.emit("make4x6", e.target.result);
+                        socket.emit("make4x6", e.target.result, parseInt(this.twobytwoamount), parseInt(this.onebyoneamount));
                     }
                     if (event.target.files.length > 0) {
                         reader.readAsArrayBuffer(event.target.files[0]);
                     } 
                 },
+                setMax: function() {
+                    let canvas = this.canvassize[0] * this.canvassize[1];
+                    let twotwo = (this.twobytwosize * this.twobytwosize) * this.twobytwoamount;
+                    let oneone = (this.onebyonesize * this.onebyonesize) * this.onebyoneamount;
+                    this.twobytwomax = (parseInt((canvas-(twotwo+oneone))/(this.twobytwosize * this.twobytwosize)) + parseInt(this.twobytwoamount));
+                    this.onebyonemax = (parseInt((canvas-(twotwo+oneone))/(this.onebyonesize * this.onebyonesize)) + parseInt(this.onebyoneamount));
+                }
+            },
+            watch: {
+                twoandone: function() {
+                    if (this.twobytwoamount != "" || this.onebyoneamount != "") {
+                        if (parseInt(this.twobytwoamount) > parseInt(this.twobytwomax)) {
+                            this.twobytwoamount = this.twobytwomax;
+                        }
+                        if (parseInt(this.onebyoneamount) > parseInt(this.onebyonemax)) {
+                            this.onebyoneamount = this.onebyonemax;
+                        }
+                        this.setMax();
+                    }
+                }
+            },
+            computed: {
+                twoandone: function() {
+                    return this.twobytwoamount + "|" + this.onebyoneamount;
+                }
+            },
+            beforeMount() {
+                this.setMax();
             }
         });
         socket.on("4x6img", imgbuf => {
