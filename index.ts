@@ -8,8 +8,6 @@ let server = http.createServer(app);
 let io = new Server(server, {maxHttpBufferSize: 1e+7});
 
 // User vars
-let canvasx = 384;
-let canvasy = 576;
 let twobytwosize = 192;
 let onebyonesize = 96;
 
@@ -23,7 +21,7 @@ app.get("/vuejs", (req, res) => {
 });
 
 io.on("connection", socket => {
-    socket.on("make4x6", (img, twoamount, oneamount) => {
+    socket.on("make4x6", (img, twoamount: number, oneamount: number, canvasx: number, canvasy: number, papersize: string) => {
         let maxx = 0, maxy = 0, unevenmargin = 0;
         Jimp.read(Buffer.from(img), (err, bimg) => {
             if (err) {
@@ -32,18 +30,22 @@ io.on("connection", socket => {
             }
             let canvas = new Jimp(canvasx, canvasy, "white", (err, cimg) => {
                 if (err) throw err;
+                if (papersize == "a4") {
+                    canvasx = canvasx-26;
+                }
                 // Making all of 2x2
                 for (let i=0;i<twoamount;i++) {
                     if (maxx <= canvasx) {
                         canvas.blit(bimg.resize(twobytwosize, twobytwosize), maxx, maxy);
                         maxx += twobytwosize;
+                        if (twoamount % 2 != 0) {
+                            unevenmargin += twobytwosize;
+                        }
                     }
                     if (maxx >= canvasx) {
+                        unevenmargin = 0;
                         maxx = 0;
                         maxy += twobytwosize;
-                    }
-                    if (twoamount % 2 != 0) {
-                        unevenmargin = twobytwosize;
                     }
                 }
                 for (let i=0;i<oneamount;i++) {
@@ -61,24 +63,6 @@ io.on("connection", socket => {
                         maxy += onebyonesize;
                     }
                 }
-                /*
-                // Make 4 2x2 of the bimg in the canvas 
-                canvas.blit(bimg.resize(192, 192), 0, 0)
-                canvas.blit(bimg.resize(192, 192), 192, 0)
-                canvas.blit(bimg.resize(192, 192), 0, 192)
-                canvas.blit(bimg.resize(192, 192), 192, 192)
-                // Make the first 1x1 row under the 2x2
-                canvas.blit(bimg.resize(96, 96), 0, 384)
-                canvas.blit(bimg.resize(96, 96), 96, 384)
-                canvas.blit(bimg.resize(96, 96), 192, 384)
-                canvas.blit(bimg.resize(96, 96), 288, 384)
-                // Make the second 1x1 row under the first 1x1 row
-                canvas.blit(bimg.resize(96, 96), 0, 480)
-                canvas.blit(bimg.resize(96, 96), 96, 480)
-                canvas.blit(bimg.resize(96, 96), 192, 480)
-                canvas.blit(bimg.resize(96, 96), 288, 480)
-                */
-                // Write changes to file
                 canvas.getBuffer(Jimp.MIME_JPEG, (err, buf) => {
                     if (err) {
                         socket.emit("serverror", err);

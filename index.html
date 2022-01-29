@@ -53,18 +53,24 @@
         .imgenabled {
             display: unset;
         }
-        .minmax {
+        .minmax, .papersize {
             text-align: center;
             color: #FFFFFF;
             font-weight: bold;
         }
-        input[type=number] {
+        input[type=number], select {
             width: 5vmin;
             background-color: transparent;
             border: 0;
             text-align: center;
             color: #FFFFFF;
             border-bottom: 2px solid #FFFFFF;
+        }
+        select {
+            width: 6.5vmin;
+        }
+        option {
+            color: #000000;
         }
         @media only screen and (max-device-width: 480px) {
             img {
@@ -74,6 +80,9 @@
                 font-size: 5vmin;
                 width: 45vw;
             }
+            select {
+                width: 11vmin;
+            }
         }
     </style>
 </head>
@@ -81,6 +90,13 @@
     <h1>Make4x6</h1>
     <div id="app">
         <img class="items" v-bind:src="$data.imgbase64" v-bind:class="{ imgdisabled: imgdisabled, imgenabled: !imgdisabled}">
+        <div class="papersize">
+            Paper size:
+            <select v-model="papersize" @change="selectpaper">
+                <option value="4x6">4x6</option>
+                <option value="a4">A4</option>
+            </select>
+        </div>
         <div class="minmax">
             2x2 pieces:
             <input type="number" min="0" v-bind:max="twobytwomax" v-model="twobytwoamount">
@@ -109,24 +125,40 @@
                 twobytwosize: 192,
                 onebyonesize: 96,
                 canvassize: [384, 576],
+                papersize: "4x6"
             },
             methods: {
                 handleFile: function(event) {
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         this.buttondisabled = true;
-                        socket.emit("make4x6", e.target.result, parseInt(this.twobytwoamount), parseInt(this.onebyoneamount));
+                        socket.emit("make4x6", e.target.result, parseInt(this.twobytwoamount), parseInt(this.onebyoneamount), parseInt(this.canvassize[0]), parseInt(this.canvassize[1]), this.papersize);
                     }
                     if (event.target.files.length > 0) {
                         reader.readAsArrayBuffer(event.target.files[0]);
+                        event.target.value = "";
                     } 
                 },
                 setMax: function() {
-                    let canvas = this.canvassize[0] * this.canvassize[1];
-                    let twotwo = (this.twobytwosize * this.twobytwosize) * this.twobytwoamount;
-                    let oneone = (this.onebyonesize * this.onebyonesize) * this.onebyoneamount;
+                    let canvas = parseInt(this.canvassize[0] * this.canvassize[1]);
+                    if (this.papersize == "a4") {
+                        canvas = canvas-82396;
+                    }
+                    let twotwo = parseInt((this.twobytwosize * this.twobytwosize) * this.twobytwoamount);
+                    let oneone = parseInt((this.onebyonesize * this.onebyonesize) * this.onebyoneamount);
                     this.twobytwomax = (parseInt((canvas-(twotwo+oneone))/(this.twobytwosize * this.twobytwosize)) + parseInt(this.twobytwoamount));
                     this.onebyonemax = (parseInt((canvas-(twotwo+oneone))/(this.onebyonesize * this.onebyonesize)) + parseInt(this.onebyoneamount));
+                },
+                selectpaper: function() {
+                    switch(this.papersize) {
+                        case "4x6":
+                            this.canvassize = [384, 576];
+                            break;
+                        case "a4":
+                            this.canvassize = [794, 1123];
+                            break;
+                    }
+                    this.setMax();
                 }
             },
             watch: {
