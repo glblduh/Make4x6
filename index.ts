@@ -22,7 +22,7 @@ app.get("/vuejs", (req, res) => {
 
 io.on("connection", socket => {
     socket.on("make4x6", (img, twoamount: number, oneamount: number, canvasx: number, canvasy: number, papersize: string) => {
-        let maxx = 0, maxy = 0, unevenmargin = 0;
+        let maxx = 0, maxy = 0, checkpoint = 0;
         Jimp.read(Buffer.from(img), (err, bimg) => {
             if (err) {
                 socket.emit("serverror", err);
@@ -38,12 +38,10 @@ io.on("connection", socket => {
                     if (maxx <= canvasx) {
                         canvas.blit(bimg.resize(twobytwosize, twobytwosize), maxx, maxy);
                         maxx += twobytwosize;
-                        if (twoamount % 2 != 0) {
-                            unevenmargin += twobytwosize;
-                        }
+                        checkpoint += twobytwosize;
                     }
                     if (maxx >= canvasx) {
-                        unevenmargin = 0;
+                        checkpoint = 0;
                         maxx = 0;
                         maxy += twobytwosize;
                     }
@@ -54,9 +52,9 @@ io.on("connection", socket => {
                         maxx += onebyonesize;
                     }
                     if (maxx >= canvasx) {
-                        if (unevenmargin != 0) {
-                            maxx = unevenmargin;
-                            unevenmargin = 0;
+                        if (checkpoint != 0) {
+                            maxx = checkpoint;
+                            checkpoint = 0;
                         } else {
                             maxx = 0;
                         }
