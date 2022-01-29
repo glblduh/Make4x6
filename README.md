@@ -1,5 +1,5 @@
 # Make4x6
-*A simple utility I made for automating the creation of 2x2 and 1x1 inch pictures that are ready to be printed on 4x6 inch paper*
+*Simple web utility for making 2x2 and 1x1 inch pictures for 4x6 inch and A4 paper*
 
 ## Installation
 ```
