@@ -23,6 +23,15 @@
         }
         img {
             border: 5px solid #FFFFFF;
+            border-radius: 10px;
+        }
+        img:hover {
+            cursor: pointer;
+            border-color: #757de8;
+        }
+        img:active {
+            border-color: #3f51b5;
+            filter: brightness(50%);
         }
         #inputhitbox {
             border: 3px solid #FFFFFF;
@@ -37,7 +46,7 @@
             cursor: pointer;
         }
         #inputhitbox:disabled {
-            cursor: auto;
+            cursor: wait;
             border-color: #ff6060;
             color: #ff6060;
         }
@@ -46,12 +55,6 @@
         }
         .items {
             margin: 0 auto 0 auto;
-        }
-        .imgdisabled {
-            display: none;
-        }
-        .imgenabled {
-            display: unset;
         }
         .minmax, .papersize {
             text-align: center;
@@ -89,7 +92,7 @@
 <body>
     <h1>Make4x6</h1>
     <div id="app">
-        <img class="items" v-bind:src="$data.imgbase64" v-bind:class="{ imgdisabled: imgdisabled, imgenabled: !imgdisabled}">
+        <img class="items" v-bind:src="imgsrc" v-bind:hidden="imgdisabled" @click="$refs.downloader.click()">
         <div class="papersize">
             Paper size:
             <select v-model="papersize" @change="selectpaper">
@@ -109,6 +112,7 @@
             <input type="file" @change="handleFile($event)" ref="fileinput" data-max="1" accept="image/png,  image/jpeg">
             Select image
         </button>
+        <a v-bind:href="imgsrc" v-bind:download="downname" ref="downloader" target="_blank" hidden></a>
     </div>
     <script>
         let socket = io();
@@ -117,7 +121,7 @@
             data: {
                 imgdisabled: true,
                 buttondisabled: false,
-                imgbase64: "",
+                imgsrc: "",
                 twobytwomax: 6,
                 onebyonemax: 24,
                 twobytwoamount: 4,
@@ -161,7 +165,7 @@
                     this.setMax();
                     this.twobytwoamount = 4;
                     this.onebyoneamount = 8;
-                }
+                },
             },
             watch: {
                 twoandone: function() {
@@ -179,6 +183,9 @@
             computed: {
                 twoandone: function() {
                     return this.twobytwoamount + "|" + this.onebyoneamount;
+                },
+                downname: function() {
+                    return Date.now() + "-" + this.twobytwoamount + "-2x2-" + this.onebyoneamount + "-1x1-" + this.papersize;
                 }
             },
             beforeMount() {
@@ -186,7 +193,7 @@
             }
         });
         socket.on("4x6img", imgbuf => {
-            vue.$data.imgbase64 = URL.createObjectURL(new Blob([imgbuf], {type: "image/jpeg"}));
+            vue.$data.imgsrc = URL.createObjectURL(new Blob([imgbuf], {type: "image/jpeg"}));
             vue.$data.imgdisabled = false;
             vue.$data.buttondisabled = false;
         });
