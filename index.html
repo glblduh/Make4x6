@@ -56,7 +56,7 @@
         .items {
             margin: 0 auto 0 auto;
         }
-        .minmax, .papersize {
+        .minmax, .papersize, .quality {
             text-align: center;
             color: #FFFFFF;
             font-weight: bold;
@@ -108,6 +108,10 @@
             1x1 pieces:
             <input type="number" min="0" v-bind:max="onebyonemax" v-model="onebyoneamount">
         </div>
+        <div class="quality">
+            JPEG quality:
+            <input type="number" min="0" max="100" v-model="jpegquality">
+        </div>
         <button class="items" id="inputhitbox" @click="$refs.fileinput.click()" v-bind:disabled="buttondisabled">
             <input type="file" @change="handleFile($event)" ref="fileinput" data-max="1" accept="image/png,  image/jpeg">
             Select image
@@ -129,14 +133,15 @@
                 twobytwosize: 192,
                 onebyonesize: 96,
                 canvassize: [384, 576],
-                papersize: "4x6"
+                papersize: "4x6",
+                jpegquality: 100
             },
             methods: {
                 handleFile: function(event) {
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         this.buttondisabled = true;
-                        socket.emit("make4x6", e.target.result, parseInt(this.twobytwoamount), parseInt(this.onebyoneamount), parseInt(this.canvassize[0]), parseInt(this.canvassize[1]), this.papersize);
+                        socket.emit("make4x6", e.target.result, parseInt(this.twobytwoamount), parseInt(this.onebyoneamount), parseInt(this.canvassize[0]), parseInt(this.canvassize[1]), this.papersize, parseInt(this.jpegquality));
                     }
                     if (event.target.files.length > 0) {
                         reader.readAsArrayBuffer(event.target.files[0]);
@@ -177,6 +182,11 @@
                             this.onebyoneamount = this.onebyonemax;
                         }
                         this.setMax();
+                    }
+                },
+                jpegquality: function() {
+                    if (this.jpegquality < 0 || this.jpegquality > 100) {
+                        this.jpegquality = 100;
                     }
                 }
             },
