@@ -61,6 +61,7 @@ io.on("connection", socket => {
                         maxy += onebyonesize;
                     }
                 }
+                canvas.quality(100);
                 canvas.getBuffer(Jimp.MIME_JPEG, (err, buf) => {
                     if (err) {
                         socket.emit("serverror", err);
