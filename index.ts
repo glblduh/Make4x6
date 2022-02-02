@@ -21,13 +21,10 @@ app.get("/vuejs", (req, res) => {
 });
 
 io.on("connection", socket => {
-    socket.on("make4x6", (img, twoamount: number, oneamount: number, canvasx: number, canvasy: number, papersize: string, jpegquality: number) => {
+    socket.on("make4x6", (img, twoamount: number, oneamount: number, canvasx: number, canvasy: number, papersize: string, brightness: number) => {
         let maxx = 0, maxy = 0, checkpoint = 0;
         Jimp.read(Buffer.from(img), (err, bimg) => {
-            if (err) {
-                socket.emit("serverror", err);
-                throw err;
-            }
+            if (err) throw err;
             let canvas = new Jimp(canvasx, canvasy, "white", (err, cimg) => {
                 if (err) throw err;
                 if (papersize == "a4") {
@@ -61,12 +58,10 @@ io.on("connection", socket => {
                         maxy += onebyonesize;
                     }
                 }
-                canvas.quality(jpegquality);
+                canvas.brightness(+(brightness/100));
+                canvas.quality(100);
                 canvas.getBuffer(Jimp.MIME_JPEG, (err, buf) => {
-                    if (err) {
-                        socket.emit("serverror", err);
-                        throw err;
-                    }
+                    if (err) throw err;
                     socket.emit("4x6img", Buffer.from(buf));
                 });
             });

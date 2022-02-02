@@ -27,10 +27,6 @@
         }
         img:hover {
             cursor: pointer;
-            border-color: #757de8;
-        }
-        img:active {
-            border-color: #3f51b5;
             filter: brightness(50%);
         }
         #inputhitbox {
@@ -45,9 +41,10 @@
             background-color: #2C2C2C;
             cursor: pointer;
         }
-        #inputhitbox:disabled {
+        #inputhitbox:disabled, select:disabled, input[type=number]:disabled {
             cursor: wait;
             border-color: #ff6060;
+            border-bottom-color: #ff6060;
             color: #ff6060;
         }
         input[type=file] {
@@ -56,7 +53,7 @@
         .items {
             margin: 0 auto 0 auto;
         }
-        .minmax, .papersize, .quality {
+        .minmax, .papersize, .brightness {
             text-align: center;
             color: #FFFFFF;
             font-weight: bold;
@@ -95,25 +92,26 @@
         <img class="items" v-bind:src="imgsrc" v-bind:hidden="imgdisabled" @click="$refs.downloader.click()">
         <div class="papersize">
             Paper size:
-            <select v-model="papersize" @change="selectpaper">
+            <select v-model="papersize" @change="selectpaper" v-bind:disabled="isprocessing">
                 <option value="4x6">4x6</option>
                 <option value="a4">A4</option>
             </select>
         </div>
         <div class="minmax">
             2x2 pieces:
-            <input type="number" min="0" v-bind:max="twobytwomax" v-model="twobytwoamount">
+            <input type="number" min="0" v-bind:max="twobytwomax" v-model="twobytwoamount" v-bind:disabled="isprocessing">
         </div>
         <div class="minmax">
             1x1 pieces:
-            <input type="number" min="0" v-bind:max="onebyonemax" v-model="onebyoneamount">
+            <input type="number" min="0" v-bind:max="onebyonemax" v-model="onebyoneamount" v-bind:disabled="isprocessing">
         </div>
-        <div class="quality">
-            JPEG quality:
-            <input type="number" min="0" max="100" v-model="jpegquality">
+        <div class="brightness">
+            Brightness: +
+            <input type="number" step="10" min="0" max="90" v-model="brightness" v-bind:disabled="isprocessing">
+            %
         </div>
-        <button class="items" id="inputhitbox" @click="$refs.fileinput.click()" v-bind:disabled="buttondisabled">
-            <input type="file" @change="handleFile($event)" ref="fileinput" data-max="1" accept="image/png,  image/jpeg">
+        <button class="items" id="inputhitbox" @click="$refs.fileinput.click()" v-bind:disabled="isprocessing">
+            <input type="file" @change="handleFile($event)" ref="fileinput" data-max="1" accept="image/png,  image/jpeg" v-bind:disabled="isprocessing">
             Select image
         </button>
         <a v-bind:href="imgsrc" v-bind:download="downname" ref="downloader" target="_blank" hidden></a>
@@ -124,7 +122,7 @@
             el: "#app",
             data: {
                 imgdisabled: true,
-                buttondisabled: false,
+                isprocessing: false,
                 imgsrc: "",
                 twobytwomax: 6,
                 onebyonemax: 24,
@@ -134,14 +132,14 @@
                 onebyonesize: 96,
                 canvassize: [384, 576],
                 papersize: "4x6",
-                jpegquality: 100
+                brightness: 0
             },
             methods: {
                 handleFile: function(event) {
                     const reader = new FileReader();
                     reader.onload = (e) => {
-                        this.buttondisabled = true;
-                        socket.emit("make4x6", e.target.result, parseInt(this.twobytwoamount), parseInt(this.onebyoneamount), parseInt(this.canvassize[0]), parseInt(this.canvassize[1]), this.papersize, parseInt(this.jpegquality));
+                        this.isprocessing = true;
+                        socket.emit("make4x6", e.target.result, parseInt(this.twobytwoamount), parseInt(this.onebyoneamount), parseInt(this.canvassize[0]), parseInt(this.canvassize[1]), this.papersize, parseInt(this.brightness));
                     }
                     if (event.target.files.length > 0) {
                         reader.readAsArrayBuffer(event.target.files[0]);
@@ -184,9 +182,12 @@
                         this.setMax();
                     }
                 },
-                jpegquality: function() {
-                    if (this.jpegquality < 0 || this.jpegquality > 100) {
-                        this.jpegquality = 100;
+                brightness: function() {
+                    if (this.brightness < 0) {
+                        this.brightness = 0;
+                    }
+                    if (this.brightness > 90) {
+                        this.brightness = 90;
                     }
                 }
             },
@@ -205,11 +206,8 @@
         socket.on("4x6img", imgbuf => {
             vue.$data.imgsrc = URL.createObjectURL(new Blob([imgbuf], {type: "image/jpeg"}));
             vue.$data.imgdisabled = false;
-            vue.$data.buttondisabled = false;
+            vue.$data.isprocessing = false;
         });
-        socket.on("serverror", err => {
-            alert(err);
-        })
     </script>
 </body>
 </html>
